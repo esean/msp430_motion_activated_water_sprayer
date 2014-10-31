@@ -13,10 +13,8 @@
 // only factor in long/short-term avg if above this threshold
 #define THRESHOLD_ir_longShortAvg   33
 
-#if USE_ARRAY_AVG == 1
 // values from IR motion sensor
 static unsigned int ir_percent = 0;
-#endif
 #if USE_IR_INHIBIT == 1
 static unsigned int ir_inhibit = 0;
 #endif
@@ -50,7 +48,6 @@ void sensor_callback()
 
   // IR MOTION 
   //-------------------
-#if USE_ARRAY_AVG == 1
   {
 //    unsigned int ir_percent_prev = ir_percent;
     ir_percent = sens_ir_get_last_sum();
@@ -67,7 +64,6 @@ void sensor_callback()
 #endif  // 0
     cnt++;
   }
-#endif
   
 #if USE_IR_INHIBIT == 1
   {

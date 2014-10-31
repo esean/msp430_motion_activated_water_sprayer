@@ -41,7 +41,7 @@ int main( void )
     hw_go_to_sleep();
     
     // update system time
-	// always goes first!
+    // always goes first!
     timer_callback();
 
     // store samples
