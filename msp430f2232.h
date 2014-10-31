@@ -1,3 +1,5 @@
+#if XCODE_BUILD != 1
+
 /********************************************************************
 *
 * Standard register and bit definitions for the Texas Instruments
@@ -978,3 +980,5 @@ READ_ONLY DEFC( CALBC1_1MHZ      , CALBC1_1MHZ_)
 #pragma language=default
 
 #endif /* #ifndef __msp430x22x2 */
+
+#endif  // #if XCODE_BUILD == 1

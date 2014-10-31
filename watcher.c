@@ -18,7 +18,7 @@
 #define RELAY_NO_MOTION_DECAY_SEC             180 // big sprays every 15sec during this time, decreasing pulse widths, off after this time
 #define RELAY_NO_MOTION_DECAY_DIV             (100 / (RELAY_NO_MOTION_DECAY_SEC/RELAY_NO_MOTION_TIME_INTERVAL_SEC))
 
-#define RELAY_MAX_SPRAY_TIME_SEC              10
+#define RELAY_MAX_SPRAY_TIME_SEC              3
 #define RELAY_MAX_SPRAY_TIME_DIV              (100 / RELAY_MAX_SPRAY_TIME_SEC)
 
 typedef enum {

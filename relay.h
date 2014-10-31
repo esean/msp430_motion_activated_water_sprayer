@@ -21,6 +21,9 @@ unsigned int relay_is_relay_on_now();
 // set relay pulse mode: 0=constant on, >0 means pulse more quickly
 void relay_set_pulsed_out_to(unsigned int new);
 
+// this fcn is called when the water tube detects contact or not
+void relay_hw_water_pressure_changed();
+
 // CB
 void relay_callback();
 

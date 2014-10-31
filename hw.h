@@ -11,6 +11,7 @@
 #define     RELAY                 BIT4  // P1.4
 #define     MOTION_INPUT          BIT5  // P1.5
 #define     LED1                  BIT6  // P1.6 - led2 on board, green
+#define     OFF_SENSOR            BIT7  // P1.7 - mesh netting around tube for off detection, pulled low on contact
 
 #define     TIMER_PWM_PERIOD      16384 // 0.5sec @ 32khz
 
@@ -25,6 +26,9 @@
 
 // is IR signal input high ?
 int hw_see_motion_now();
+
+// is the water turned off, is tube touching side metal?
+int hw_is_water_off();
 
 // called by sensor to set HW PWM
 void hw_set_relay_pwm_percent(unsigned int percent);

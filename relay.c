@@ -10,25 +10,25 @@
 #include "filter.h"
 #include "timer.h"
 
-// If relay is left on more than this, it needs more time to turn off
-#define ON_TIME_REQUIRES_MORE_OFF     2
-#define ON_TIME_FULLY_OFF             6
-#define ON_TIME_DEF_INTERSPACE_TICKS  (WDT_CYCLES_PER_SEC/2)  // 1/2 second
+typedef enum {
+  NORMAL,
+  WAIT_FOR_PULSE_OFF,
+} RELAY_STATE;
 
-// boolean: true if we are actively driving a pwm to relay
+static RELAY_STATE myState = NORMAL;
+
+// boolean: true if we are actively in a 'water switch on' cycle (which may contain multiple on/off events)
 static unsigned int isRelayPwmActive = false;
 // boolean: >0 means pulse the output, ==0 means constant on
 static unsigned int doPulsedRelaysPulse = 0;
 
 // time at which relay switch will turn off
 static unsigned long relay_off_time = 0L;
-// stores time at which next relay PWM pulse may begin
-static unsigned long timer_next_relay_pulse = 0L;
+static unsigned long relay_on_time = 0L;
 // stores last time relay was turned off
 static unsigned long last_relay_turn_off_time = 0L;  
 
 // forward
-static void relay_set_relay_percent(unsigned int percent);
 static void relay_turn_relay_off();
 
 
@@ -39,7 +39,7 @@ static void relay_turn_relay_off();
 int relay_init()
 {
   // make sure pwm to relay is off
-  relay_set_relay_percent(0);
+  relay_pulse_relay_pwm(0,0);
   
   return 0;
 }
@@ -47,57 +47,84 @@ int relay_init()
 // set relay PWM to percent for on_time_ticks
 void relay_pulse_relay_pwm(unsigned int percent, unsigned int on_time_ticks)
 {
-  // return if the inter-space pulse time has not been met
-  // NOTE: compare as uint to avoid long compare
-  if (timer_next_relay_pulse > get_time())
+  // don't allow any change if already spraying water
+  if (!hw_is_water_off())
     return;
 
+  // don't allow any change if we are in a cycle already
   if (isRelayPwmActive)
     return;
 
-  relay_off_time = get_time() + (unsigned long)on_time_ticks;
-
-  relay_set_relay_percent(percent);
-
+  // Red LED indicates relay is activated to some extent
   if (percent > 0)
   {
-    timer_next_relay_pulse = get_time() + (unsigned long)on_time_ticks + \
-      ((on_time_ticks > SEC_2_TICKS(ON_TIME_REQUIRES_MORE_OFF)) ? \
-        (unsigned long)SEC_2_TICKS(ON_TIME_FULLY_OFF) : \
-        (unsigned long)ON_TIME_DEF_INTERSPACE_TICKS);
+    P1OUT |= LED0;
+    isRelayPwmActive = true;
+#if USE_MSP_PWM == 1
+    hw_set_relay_pwm_percent((percent>100) ? 100 : percent);
+#else
+    hw_set_relay_pwm_percent(100);
+#endif
+    relay_on_time = get_time();
+    relay_off_time = relay_on_time + (unsigned long)on_time_ticks;
   }
+  else
+    relay_turn_relay_off(); 
 }
 
 // called every 250ms
 void relay_callback()
 {
-  // if currently doing a PWM ramp-down, slowly drive back off relay
-  if (isRelayPwmActive)
+  switch (myState)
   {
-    // NOTE: compare as uint to avoid long compare
-    if (relay_off_time <= get_time())
-    {
-      relay_turn_relay_off();
-    }
-    else if (doPulsedRelaysPulse > 0)
-    {
-      // Pulse water relay
-      if (((unsigned int)get_time() % (WDT_CYCLES_PER_SEC * 2)) == 0)
+    case NORMAL:
+      // if currently doing a PWM ramp-down, slowly drive back off relay
+      if (isRelayPwmActive)
       {
-        P1OUT &= ~LED0;
-        hw_set_relay_pwm_percent(0);
-      }
-      else if (((unsigned int)get_time() % (WDT_CYCLES_PER_SEC+1)) == 0)
-      {
-        P1OUT |= LED0;
-#if USE_MSP_PWM == 1
-        #error "TODO"
+        // NOTE: compare as uint to avoid long compare
+        if (relay_off_time <= get_time())
+        {
+          relay_turn_relay_off();
+        }
+        else if (doPulsedRelaysPulse > 0)
+        {
+#if 0
+          // Pulse water relay
+          if (((unsigned int)get_time() % (WDT_CYCLES_PER_SEC * 2)) == 0)
+          {
+            P1OUT &= ~LED0;
+            hw_set_relay_pwm_percent(0);
+          }
+          else if (((unsigned int)get_time() % (WDT_CYCLES_PER_SEC+1)) == 0)
+          {
+            P1OUT |= LED0;
+            #if USE_MSP_PWM == 1
+                    #error "TODO"
+            #else
+                    hw_set_relay_pwm_percent(100);
+            #endif
+          }
 #else
-        hw_set_relay_pwm_percent(100);
+          // pulse on & off, wait for tube to fall and turn on again
+          if ((get_time() - relay_on_time) % doPulsedRelaysPulse) 
+          {
+            // invert state 
+            ;
+          }
 #endif
+        }
       }
-    }
+      break;
+    case WAIT_FOR_PULSE_OFF:
+      break;
   }
+}
+
+void relay_hw_water_pressure_changed()
+{
+  // TODO:
+  //is_water_switch_off = hw_is_water_off();
+  ;
 }
 
 unsigned long relay_last_turn_off_time()
@@ -121,28 +148,6 @@ void relay_set_pulsed_out_to(unsigned int new)
 //-------------------------------------
 // PRIVATE
 //-------------------------------------
-
-static void relay_set_relay_percent(unsigned int percent)
-{
-  // return if the inter-space pulse time has not been met
-  // NOTE: compare as uint to avoid long compare
-  if (timer_next_relay_pulse > get_time())
-    return;
-
-  // Red LED indicates relay is activated to some extent
-  if (percent > 0)
-  {
-    P1OUT |= LED0;
-    isRelayPwmActive = true;
-#if USE_MSP_PWM == 1
-    hw_set_relay_pwm_percent((percent>100) ? 100 : percent);
-#else
-    hw_set_relay_pwm_percent(100);
-#endif
-  }
-  else
-    relay_turn_relay_off(); 
-}
 
 static void relay_turn_relay_off()
 {

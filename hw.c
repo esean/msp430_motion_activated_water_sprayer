@@ -9,6 +9,7 @@
 #include "timer.h"
 #include "sensor.h"
 #include "avg.h"
+#include "relay.h"
 
 unsigned int bGotWdtInt = false;
 
@@ -34,9 +35,11 @@ void hw_go_to_sleep()
   //_BIS_SR(LPM3_bits + GIE);                 // Enter LPM3 w/interrupt
   _BIS_SR(GIE);
   // wait for WDT to fire
+#if XCODE_BUILD != 1
   bGotWdtInt = false;
   while (bGotWdtInt == false)
     ;
+#endif
   P1OUT |= LED1;
 }
 
@@ -93,6 +96,12 @@ int hw_see_motion_now()
   return P1IN & MOTION_INPUT;
 }
 
+int hw_is_water_off()
+{
+  // when touching, the voltage read will be pulled down to 0v
+  return ( ! ( P1IN & OFF_SENSOR ) );
+}
+
 
 //------------------------------------
 // PRIVATE
@@ -131,26 +140,38 @@ static void set_intlvl_debounce()
     P1IES |= MOTION_INPUT;  // 0=low-2-high 1=high-2-low
   else
     P1IES &= ~MOTION_INPUT;
+  if (P1IN & OFF_SENSOR)
+    P1IES |= OFF_SENSOR;
+  else
+    P1IES &= ~OFF_SENSOR;
 }
 
 static void my_hw_init(void)
 {
+  P1SEL &= ~(LED0 | LED1 | RELAY | OFF_SENSOR);
+
+  // OUTPUTS
   P1DIR |= LED0 | LED1 | RELAY;     // output and
   P1OUT &= ~(LED0 | LED1 | RELAY);  // turn off P1.0 and P1.6  
 #if USE_MSP_PWM == 1
   P1SEL |= RELAY;
 #endif
-  // motion sensor is connected here as I/O
-  P1DIR &= ~MOTION_INPUT;    // input
+
+  // INPUTS
+  // motion sensor and off sensor connected as input
+  P1DIR &= ~(MOTION_INPUT | OFF_SENSOR);    // input
+  // off-sensor pull-up
+  P1REN |= OFF_SENSOR;
+  P1OUT |= OFF_SENSOR;
   set_intlvl_debounce();
-  P1IE |= MOTION_INPUT;
-  P1IFG &= ~MOTION_INPUT;
+  P1IFG &= ~(MOTION_INPUT | OFF_SENSOR);
+  P1IE |= MOTION_INPUT | OFF_SENSOR;
 }
 
 #if USE_MSP_PWM == 1
 static void ConfigureTimerPwm(void)
 {  
-  TACCR0 = TIMER_PWM_PERIOD;                              //   
+  TACCR0 = TIMER_PWM_PERIOD; 
   TACTL = TASSEL_2 | MC_1;                  // TACLK = SMCLK, Up mode.
   TACCTL0 = CCIE;
   TACCTL1 = CCIE + OUTMOD_3;                // TACCTL1 Capture Compare
@@ -165,15 +186,23 @@ static void ConfigureTimerPwm(void)
 __interrupt void Port_1(void)
 {
   set_intlvl_debounce();
-  P1IFG &= ~MOTION_INPUT;                           // IFG cleared
-  avg_hw_saw_motion();
+  if (P1IFG & OFF_SENSOR)
+  {
+    relay_hw_water_pressure_changed();
+    P1IFG &= ~OFF_SENSOR;
+  }
+  if (P1IFG & MOTION_INPUT)
+  {
+    avg_hw_saw_motion();
+    P1IFG &= ~MOTION_INPUT;
+  }
 }
 
 #pragma vector=WDT_VECTOR
 __interrupt void WDT_ISR(void)
 {
-  IFG1 &= ~WDTIFG;                 /* clear interrupt flag */
   bGotWdtInt = true;
+  IFG1 &= ~WDTIFG;                 /* clear interrupt flag */
   __low_power_mode_off_on_exit();           // exit low-power mode
 }
 
