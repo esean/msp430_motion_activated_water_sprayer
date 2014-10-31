@@ -178,14 +178,14 @@ __interrupt void WDT_ISR(void)
 }
 
 // Timer A1 interrupt service routine
-#pragma vector=TIMERA1_VECTOR
+#pragma vector=TIMER0_A1_VECTOR
 __interrupt void ta1_isr(void)
 {
   TACCTL1 &= ~CCIFG;
 }
 
 // Timer A0 interrupt service routine
-#pragma vector=TIMERA0_VECTOR
+#pragma vector=TIMER0_A0_VECTOR
 __interrupt void Timer_A (void)
 {
   TACCTL0 &= ~CCIFG;              

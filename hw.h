@@ -4,11 +4,12 @@
 // (c) esean_us@yahoo.com 6/14/12
 //
 
-#include  "msp430g2231.h"
+#include  "msp430g2352.h"
+//#include  "msp430g2231.h"
 
-#define     MOTION_INPUT          BIT5  // P1.5
-#define     RELAY                 BIT2  // P1.2
 #define     LED0                  BIT0  // P1.0 - led1 on board, red
+#define     RELAY                 BIT4  // P1.4
+#define     MOTION_INPUT          BIT5  // P1.5
 #define     LED1                  BIT6  // P1.6 - led2 on board, green
 
 #define     TIMER_PWM_PERIOD      16384 // 0.5sec @ 32khz
