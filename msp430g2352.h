@@ -829,5 +829,5 @@ READ_ONLY DEFC( CALBC1_1MHZ      , CALBC1_1MHZ_)
 
 #endif /* #ifndef __MSP430G2352 */
 
-#endif // #if XCODE_BUILD == 1
+#endif // #if XCODE_BUILD != 1
 

@@ -8,6 +8,9 @@
 #include "hw.h"
 #include "avg.h"
 #include "filter.h"
+#if XCODE_BUILD == 1
+#include <stdio.h>
+#endif
 
 #define LONG_TERM_COEF    910
 #define SHORT_TERM_COEF   500
@@ -63,6 +66,10 @@ void avg_callback()
 
     motNow = 0;
   }
+	
+#if XCODE_BUILD == 1
+	printf(",%d,%d,%d,%d",wdt_cnt,motNow,avg_long_term,avg_short_term);
+#endif
 }
 
 unsigned int avg_get_long_avg()

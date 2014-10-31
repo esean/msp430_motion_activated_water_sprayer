@@ -9,6 +9,9 @@
 #include "sensor.h"
 #include "filter.h"
 #include "sens_ir.h"
+#if XCODE_BUILD == 1
+#include <stdio.h>
+#endif
 
 // only factor in long/short-term avg if above this threshold
 #define THRESHOLD_ir_longShortAvg   33
@@ -36,7 +39,7 @@ static unsigned int final_percent = 0;
 void sensor_callback()
 {
   unsigned int cnt = 0;
-  
+
   //================
   // SENSOR SAMLPING
   //================
@@ -108,6 +111,11 @@ void sensor_callback()
     final_percent = (ir_percent*4 + ir_longShortAvg) / (cnt+4);
 #else
   final_percent = (ir_percent*4 + ir_longShortAvg) / (cnt+4);
+#endif
+	
+#if XCODE_BUILD == 1
+  // TODO: needs ir_inhibit
+  printf(",%d,%d,%d",ir_percent,ir_longShortAvg,final_percent);
 #endif
 }
 

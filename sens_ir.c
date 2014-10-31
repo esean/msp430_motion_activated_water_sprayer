@@ -11,6 +11,9 @@
 #include "avg.h"
 #include "mymath.h"
 #include "timer.h"
+#if XCODE_BUILD == 1
+#include <stdio.h>
+#endif
 
 // largest motion measurement we have seen
 static unsigned int max_sum = 0;
@@ -38,6 +41,9 @@ void sens_ir_callback()
   sens_ir_inhibit();
   sens_ir_vote();
   sens_ir_vote_longShortAvgs();
+#if XCODE_BUILD == 1
+  printf(",%d,%d,%d,%d,%d",max_sum,max_sum_longShortAvg,persistant_on,last_longShortAvg,last_sum);
+#endif
 }
 
 unsigned int sens_ir_get_last_sum()

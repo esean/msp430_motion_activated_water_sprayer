@@ -122,7 +122,9 @@ void relay_callback()
 
 void relay_hw_water_pressure_changed()
 {
-  // TODO:
+  // TODO: we need to act on this change *NOW*
+    // if it just went on, record how long it took to go on
+    // if it just went off, record how long from when relay was turned off
   //is_water_switch_off = hw_is_water_off();
   ;
 }

@@ -10,6 +10,14 @@
 #include "sensor.h"
 #include "avg.h"
 #include "relay.h"
+#if XCODE_BUILD == 1
+#include <stdio.h>
+#endif
+
+#if XCODE_BUILD == 1
+extern int XCODE_saw_motion;
+extern int XCODE_saw_tube_down;
+#endif
 
 unsigned int bGotWdtInt = false;
 
@@ -54,9 +62,17 @@ void hw_set_relay_pwm_percent(unsigned int percent)
   TACCTL1 |= CCIE; 
 #else
   if (percent == 0)
+#if XCODE_BUILD == 1
+	printf("OFF\n");
+#else
     P1OUT &= ~RELAY;
+#endif
   else 
-    P1OUT |= RELAY;
+#if XCODE_BUILD == 1
+	  printf("ON\n");
+#else
+	P1OUT |= RELAY;
+#endif
 #endif
 }
 
@@ -93,13 +109,21 @@ int hw_init( void )
 
 int hw_see_motion_now()
 {
+#if XCODE_BUILD == 1
+  return XCODE_saw_motion;
+#else
   return P1IN & MOTION_INPUT;
+#endif
 }
 
 int hw_is_water_off()
 {
+#if XCODE_BUILD == 1
+  return (XCODE_saw_tube_down);
+#else
   // when touching, the voltage read will be pulled down to 0v
   return ( ! ( P1IN & OFF_SENSOR ) );
+#endif
 }
 
 
@@ -186,6 +210,7 @@ static void ConfigureTimerPwm(void)
 __interrupt void Port_1(void)
 {
   set_intlvl_debounce();
+    // TODO: want to see both sides of transition on off_sensor, so can tell when goes on *AND* off
   if (P1IFG & OFF_SENSOR)
   {
     relay_hw_water_pressure_changed();
@@ -196,6 +221,7 @@ __interrupt void Port_1(void)
     avg_hw_saw_motion();
     P1IFG &= ~MOTION_INPUT;
   }
+    // TODO: add edge detect for parrot "repeat"
 }
 
 #pragma vector=WDT_VECTOR

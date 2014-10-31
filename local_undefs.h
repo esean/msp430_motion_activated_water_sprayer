@@ -45,6 +45,8 @@ int dummy;
 
 #define LPM3_bits   0
 
+#define WDT_ADLY_16 0
+
 #define __interrupt 
 #define _BIS_SR(x)
 #define __low_power_mode_off_on_exit()
